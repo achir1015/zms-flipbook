@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>閱讀器測試</title>
+<link rel="stylesheet" href="reader/reader.css"><style>html,body{margin:0;height:100%}#r{position:absolute;inset:0}</style></head>
+<body><div id="r"></div>
+<script src="reader/flip.js"></script><script src="reader/qrcode.js"></script><script src="reader/reader.js"></script>
+<script>
+const pages = [];
+for (let i = 0; i < 10; i++) {
+  const c = document.createElement('canvas'); c.width = 800; c.height = 1130;
+  const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, 800, 1130);
+  x.fillStyle = `hsl(${i * 36},60%,70%)`; x.fillRect(0, 0, 800, 260);
+  x.fillStyle = '#222'; x.font = 'bold 90px sans-serif'; x.fillText('第 ' + (i + 1) + ' 頁', 60, 180);
+  x.font = '36px sans-serif';
+  const lines = ['從前從前，有一隻小白兔住在森林裡。', '牠每天都會去河邊喝水。', '有一天，牠遇到了一隻烏龜。'];
+  const runs = [];
+  lines.forEach((t, k) => { x.fillText(t, 60, 400 + k * 70); const w = x.measureText(t).width; runs.push([t, 60 / 800, (400 + k * 70 - 34) / 1130, w / 800, 44 / 1130, 1]); });
+  pages.push({ src: c.toDataURL('image/jpeg', 0.9), w: 800, h: 1130, text: lines.join('\n'), runs,
+    items: i === 1 ? [{ type: 'link', x: 0.07, y: 0.32, w: 0.5, h: 0.05, action: { kind: 'url', value: 'example.com' } }, { type: 'qr', x: 0.6, y: 0.7, w: 0.3, h: 0.21, text: 'https://example.com' }, { type: 'shape', shape: 'star', x: 0.1, y: 0.7, w: 0.2, h: 0.14, anim: 'bounce' }, { type: 'button', text: '跳到第 5 頁', x: 0.35, y: 0.75, w: 0.22, h: 0.06, action: { kind: 'page', value: 5 } }] : [] });
+}
+window.R = FB.Reader.mount(document.getElementById('r'), { id: 't', title: '測試電子書', pages, toc: [{ title: '第一章', page: 1, children: [{ title: '小白兔', page: 2 }] }, { title: '第二章', page: 5 }], settings: { scene: 'snow' } }, {});
+</script></body></html>

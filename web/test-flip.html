@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW"><head><meta charset="utf-8"><title>翻頁引擎測試</title>
+<style>html,body{margin:0;height:100%;background:#3a4250}#cv{width:100%;height:calc(100% - 40px);display:block;touch-action:none}
+#bar{height:40px;display:flex;gap:8px;align-items:center;padding:0 10px;color:#fff;font:14px sans-serif}</style></head>
+<body><div id="bar"><button id="p">◀</button><button id="n">▶</button><label><input type="checkbox" id="s">單頁</label><label><input type="checkbox" id="r">右翻</label><label><input type="checkbox" id="h">硬封面</label><span id="info"></span></div>
+<canvas id="cv"></canvas>
+<script src="reader/flip.js"></script>
+<script>
+const N = 12, imgs = [];
+for (let i = 0; i < N; i++) {
+  const c = document.createElement('canvas'); c.width = 600; c.height = 850;
+  const x = c.getContext('2d');
+  x.fillStyle = `hsl(${i * 30},60%,85%)`; x.fillRect(0, 0, 600, 850);
+  x.fillStyle = '#222'; x.font = 'bold 120px sans-serif'; x.textAlign = 'center'; x.fillText('第' + (i + 1) + '頁', 300, 300);
+  x.font = '32px sans-serif'; for (let k = 0; k < 10; k++) x.fillText('這是測試文字 ABC ' + k, 300, 420 + k * 40);
+  const im = new Image(); im.src = c.toDataURL(); imgs.push(im);
+}
+const fl = new FB.Flip(document.getElementById('cv'), { count: N, aspect: 600 / 850, image: (i) => imgs[i], center: true,
+  onChange: (k) => info.textContent = '跨頁 ' + k });
+window.fl = fl;
+imgs[0].onload = () => fl.draw();
+p.onclick = () => fl.prev(); n.onclick = () => fl.next();
+s.onchange = () => fl.set({ single: s.checked }); r.onchange = () => fl.set({ rtl: r.checked }); h.onchange = () => fl.set({ hard: h.checked });
+window.onresize = () => fl.resize();
+</script></body></html>

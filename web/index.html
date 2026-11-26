@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>資料助秘電子書翻頁</title>
+<link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="reader/reader.css">
+</head>
+<body>
+<div id="splash" class="screen show">
+  <img src="assets/icon.png" alt="" class="splash-logo">
+  <h1>資料助秘電子書翻頁</h1>
+  <p id="splash-msg">啟動中，正在準備資料庫…</p>
+  <div class="spinner"></div>
+</div>
+
+<!-- 登入 -->
+<div id="login" class="screen">
+  <div class="login-card">
+    <img src="assets/icon.png" alt="" class="login-logo">
+    <h1>資料助秘電子書翻頁</h1>
+    <p class="sub" id="login-sub">請登入</p>
+    <div id="login-form"></div>
+    <p class="credit" id="credit"></p>
+  </div>
+</div>
+
+<!-- 書櫃 -->
+<div id="home" class="screen">
+  <header class="topbar">
+    <img src="assets/icon.png" class="tb-logo" alt="">
+    <div class="tb-title">資料助秘電子書翻頁</div>
+    <div class="spacer"></div>
+    <button class="tbtn" id="home-guide" title="語音動態教學">🔊 語音教學</button>
+    <button class="tbtn" id="home-user">👤 <span class="uname"></span> ▾</button>
+  </header>
+  <div class="home-body">
+    <div class="home-head">
+      <h2>我的書櫃</h2>
+      <div class="spacer"></div>
+      <button class="btn big" id="btn-sample" title="建立一本示範電子書（使用說明），馬上看看翻頁效果">📘 示範電子書</button>
+      <button class="btn primary big" id="btn-new" style="margin-left:8px">＋ 建立電子書</button>
+    </div>
+    <div id="book-grid" class="book-grid"></div>
+  </div>
+</div>
+
+<!-- 閱讀 -->
+<div id="read" class="screen">
+  <header class="topbar slim">
+    <button class="tbtn" id="read-back">◀ 回書櫃</button>
+    <div class="tb-title" id="read-title"></div>
+    <div class="spacer"></div>
+    <button class="tbtn" id="read-edit">✎ 編輯這本書</button>
+  </header>
+  <div id="read-box" class="read-box"></div>
+</div>
+
+<!-- 編輯 -->
+<div id="editor" class="screen">
+  <header class="topbar">
+    <button class="tbtn" id="btn-back" title="回到書櫃">◀ 書櫃</button>
+    <input id="book-name" class="proj-name" maxlength="120" title="書名（點一下可以改）">
+    <nav class="steps">
+      <button data-tab="pages" class="step on"><b>1</b> 頁面與互動</button>
+      <button data-tab="design" class="step"><b>2</b> 外觀設計</button>
+      <button data-tab="publish" class="step"><b>3</b> 發佈</button>
+    </nav>
+    <div class="spacer"></div>
+    <span id="save-state" class="save-state"></span>
+    <button class="tbtn" id="btn-undo" title="復原（Ctrl+Z）">↶ 復原</button>
+    <button class="tbtn" id="btn-redo" title="重做（Ctrl+Y）">↷ 重做</button>
+    <button class="tbtn" id="btn-preview" title="用閱讀器看這本書">📖 預覽</button>
+    <button class="tbtn" id="btn-guide" title="語音動態教學">🔊 語音教學</button>
+    <button class="tbtn" id="ed-user">👤 <span class="uname"></span> ▾</button>
+  </header>
+  <main class="ed-main">
+    <!-- 1 頁面與互動 -->
+    <section id="tab-pages" class="tab on">
+      <aside class="pg-list">
+        <div class="pane-title">頁面 <span id="pg-count" class="hint"></span>
+          <span class="spacer"></span>
+          <button class="mini" id="pg-add" title="再匯入頁面（PDF、圖片、簡報…）">＋ 加頁</button>
+        </div>
+        <div id="pg-thumbs" class="pg-thumbs"></div>
+        <div class="pg-tools">
+          <button class="mini" id="pg-up" title="往前移">▲</button>
+          <button class="mini" id="pg-down" title="往後移">▼</button>
+          <button class="mini" id="pg-blank" title="插入空白頁">空白頁</button>
+          <button class="mini" id="pg-del" title="刪除這一頁">🗑 刪除</button>
+        </div>
+      </aside>
+      <div class="pg-center">
+        <div class="toolbar" id="el-tools">
+          <span class="tl-lbl">加入：</span>
+          <button class="btn sm" data-add="link" title="在頁面上框一塊可以點的區域：開網頁、跳頁、打電話、跳出視窗">🔗 連結</button>
+          <button class="btn sm" data-add="text">T 文字</button>
+          <button class="btn sm" data-add="image">🖼 圖片</button>
+          <button class="btn sm" data-add="video" title="影片檔、YouTube、Vimeo">🎬 影片</button>
+          <button class="btn sm" data-add="audio">🔊 聲音</button>
+          <button class="btn sm" data-add="shape">⬟ 圖形</button>
+          <button class="btn sm" data-add="button">▭ 按鈕</button>
+          <button class="btn sm" data-add="qr">▦ QR 碼</button>
+          <div class="spacer"></div>
+          <button class="btn sm" id="el-del" title="刪除選取的物件（Delete）">🗑</button>
+          <button class="btn sm" id="el-dup" title="複製選取的物件">⧉</button>
+        </div>
+        <div id="pg-stage" class="pg-stage"><div id="pg-sheet" class="pg-sheet"></div></div>
+      </div>
+      <aside class="pg-props" id="pg-props"></aside>
+    </section>
+    <!-- 2 外觀設計 -->
+    <section id="tab-design" class="tab">
+      <aside class="ds-side" id="ds-side"></aside>
+      <div class="ds-preview" id="ds-preview"></div>
+    </section>
+    <!-- 3 發佈 -->
+    <section id="tab-publish" class="tab">
+      <div class="pub-main" id="pub-main"></div>
+      <aside class="pub-side"><div class="pane-title">發佈紀錄</div><div id="pub-history" class="pub-history"></div></aside>
+    </section>
+  </main>
+</div>
+
+<input type="file" id="file-input" multiple hidden>
+
+<script src="reader/flip.js"></script>
+<script src="reader/qrcode.js"></script>
+<script src="reader/reader.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/import.js"></script>
+<script src="js/pages.js"></script>
+<script src="js/design.js"></script>
+<script src="js/publish.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/lessons.js"></script>
+<script src="js/tutorial.js"></script>
+<script>FB.boot();</script>
+</body>
+</html>

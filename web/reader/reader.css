@@ -1,0 +1,126 @@
+/* 電子書閱讀器（程式內預覽、發佈出去的網頁、線上版、手機版共用） */
+.fbr { position: relative; width: 100%; height: 100%; overflow: hidden; user-select: none; -webkit-user-select: none;
+  font-family: "Microsoft JhengHei UI", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; color: #fff; --bar: rgba(20,20,22,.88); --ic: #e8e8e8; --acc: #ffcc33; --dwell: 1.2s; }
+.fbr * { box-sizing: border-box; }
+.fbr-bg { position: absolute; inset: 0; background: #2b2f36; }
+/* 經典木紋：深色直條木板（CSS 畫的） */
+.fbr-bg.wood { background-color: #2a2622;
+  background-image: repeating-linear-gradient(90deg, rgba(0,0,0,.55) 0 2px, transparent 2px 64px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px, rgba(0,0,0,.05) 7px 9px, transparent 9px 17px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 3px, transparent 3px 11px),
+    linear-gradient(90deg, #39322c, #2a2622 30%, #3a332c 55%, #26221f 80%, #352f2a); }
+.fbr-scene { position: absolute; inset: 0; pointer-events: none; }
+.fbr-stage { position: absolute; left: 0; right: 0; top: 46px; bottom: 34px; }
+.fbr.bar-bottom .fbr-stage { top: 10px; bottom: 82px; }
+.fbr.no-bar .fbr-stage { top: 6px; bottom: 6px; }
+.fbr-cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: default; }
+.fbr-layer { position: absolute; inset: 0; pointer-events: none; }
+.fbr-page { position: absolute; overflow: hidden; }
+.fbr-it { position: absolute; pointer-events: auto; }
+.fbr-it.act { cursor: pointer; }
+.fbr-it.link { border-radius: 2px; transition: background .15s, box-shadow .15s; }
+.fbr-it.link.hl:hover, .fbr-it.link.flash { background: rgba(255, 220, 0, .35); box-shadow: 0 0 0 1px rgba(255,200,0,.7); }
+.fbr-it .txt { width: 100%; height: 100%; overflow: hidden; white-space: pre-wrap; word-break: break-word; line-height: 1.35; }
+.fbr-it img, .fbr-it video, .fbr-it iframe, .fbr-it svg, .fbr-it canvas { width: 100%; height: 100%; display: block; border: 0; }
+.fbr-it .btn { width: 100%; height: 100%; border: 0; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.fbr-it .aud { width: 100%; height: 100%; border-radius: 50%; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; font-size: 60%; cursor: pointer; }
+.fbr-hl { position: absolute; background: rgba(255, 230, 0, .42); mix-blend-mode: multiply; pointer-events: none; border-radius: 2px; }
+.fbr-hl.read { background: rgba(120, 200, 255, .45); }
+/* 工具列 */
+.fbr-top { position: absolute; left: 0; right: 0; top: 0; height: 42px; display: flex; align-items: center; justify-content: center; gap: 2px; background: var(--bar); z-index: 5; }
+.fbr.bar-bottom .fbr-top { top: auto; bottom: 34px; }
+.fbr-logo { position: absolute; left: 10px; top: 5px; height: 32px; display: flex; align-items: center; gap: 8px; font-size: 15px; color: #fff; text-decoration: none; max-width: 30%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fbr-logo img { height: 32px; max-width: 140px; object-fit: contain; }
+.fbr-b { width: 36px; height: 34px; border: 0; background: transparent; color: var(--ic); font-size: 18px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; position: relative; padding: 0; }
+.fbr-b:hover { background: rgba(255,255,255,.14); }
+.fbr-b.on { background: rgba(255, 204, 51, .3); color: #fff; }
+.fbr-b svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.fbr-pg { width: 82px; height: 26px; border: 0; border-radius: 4px; background: #e9e9e9; color: #222; text-align: center; font-size: 13px; margin: 0 4px; }
+.fbr-bot { position: absolute; left: 0; right: 0; bottom: 0; height: 32px; display: flex; align-items: center; gap: 4px; padding: 0 8px; background: var(--bar); z-index: 5; font-size: 13px; }
+.fbr-bot .fbr-t { height: 28px; padding: 0 10px; border: 0; background: transparent; color: var(--ic); cursor: pointer; border-radius: 5px; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
+.fbr-bot .fbr-t:hover { background: rgba(255,255,255,.14); }
+.fbr-bot .fbr-t.on { color: var(--acc); }
+.fbr-bot .sp { flex: 1; }
+.fbr-arrow { position: absolute; top: 50%; width: 46px; height: 90px; margin-top: -45px; border: 0; background: transparent; color: rgba(255,255,255,.75); font-size: 46px; cursor: pointer; z-index: 4; display: flex; align-items: center; justify-content: center; }
+.fbr-arrow:hover { color: #fff; background: rgba(0,0,0,.25); }
+.fbr-arrow.l { left: 4px; } .fbr-arrow.r { right: 4px; }
+.fbr-arrow[disabled] { opacity: .15; pointer-events: none; }
+.fbr-arrow svg { width: 34px; height: 60px; fill: none; stroke: currentColor; stroke-width: 3; }
+/* 面板（縮圖、目錄、搜尋、書籤、朗讀、眼控） */
+.fbr-panel { position: absolute; z-index: 7; background: rgba(28,30,34,.96); color: #eee; box-shadow: 0 6px 24px rgba(0,0,0,.45); display: none; }
+.fbr-panel.show { display: flex; flex-direction: column; }
+.fbr-panel h3 { margin: 0; padding: 10px 14px; font-size: 15px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.fbr-panel h3 .x { margin-left: auto; background: none; border: 0; color: #ccc; font-size: 18px; cursor: pointer; }
+.fbr-side { left: 0; top: 42px; bottom: 32px; width: 300px; }
+.fbr.bar-bottom .fbr-side { top: 0; bottom: 76px; }
+.fbr-body { overflow: auto; flex: 1; padding: 8px; }
+.fbr-thumbs { left: 0; right: 0; bottom: 32px; height: 168px; }
+.fbr-thumbs .fbr-body { display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; padding: 10px; align-items: flex-start; }
+.fbr-th { flex: none; text-align: center; cursor: pointer; font-size: 12px; color: #bbb; }
+.fbr-th img, .fbr-th .ph { height: 120px; display: block; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.5); border: 2px solid transparent; }
+.fbr-th.cur img { border-color: var(--acc); }
+.fbr-th .pair { display: flex; }
+.fbr-toc a { display: block; padding: 7px 8px; color: #e6e6e6; text-decoration: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+.fbr-toc a:hover { background: rgba(255,255,255,.1); }
+.fbr-toc a small { float: right; color: #999; }
+.fbr-toc .sub { padding-left: 16px; }
+.fbr-search input { width: 100%; padding: 8px 10px; border-radius: 6px; border: 0; font-size: 15px; }
+.fbr-res { padding: 8px; border-bottom: 1px solid rgba(255,255,255,.07); cursor: pointer; font-size: 13px; line-height: 1.5; }
+.fbr-res:hover { background: rgba(255,255,255,.08); }
+.fbr-res b { color: var(--acc); }
+.fbr-res mark { background: #ffe14d; color: #000; padding: 0 1px; }
+.fbr-row { display: flex; align-items: center; gap: 8px; margin: 8px 4px; font-size: 14px; flex-wrap: wrap; }
+.fbr-row select, .fbr-row input[type=range] { flex: 1; min-width: 120px; }
+.fbr-row select { padding: 6px; border-radius: 6px; font-size: 14px; }
+.fbr-bigbtn { padding: 10px 16px; border-radius: 8px; border: 0; background: #ffcc33; color: #222; font-size: 16px; font-weight: bold; cursor: pointer; }
+.fbr-bigbtn.ghost { background: rgba(255,255,255,.14); color: #fff; }
+.fbr-note { font-size: 12px; color: #aaa; line-height: 1.5; margin: 6px 4px; }
+.fbr-pop { position: absolute; z-index: 9; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; }
+.fbr-pop .box { position: relative; width: min(92%, 960px); height: min(86%, 640px); background: #111; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.fbr-pop .box.img { background: transparent; box-shadow: none; display: flex; align-items: center; justify-content: center; }
+.fbr-pop .box.img img { max-width: 100%; max-height: 100%; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.fbr-pop .close { position: absolute; right: -14px; top: -14px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; color: #222; font-size: 18px; cursor: pointer; z-index: 2; }
+.fbr-pop iframe, .fbr-pop video { width: 100%; height: 100%; border: 0; background: #000; }
+.fbr-msg { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); background: rgba(0,0,0,.8); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; z-index: 10; pointer-events: none; }
+/* 朗讀字幕 */
+.fbr-cap { position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%); max-width: 88%; background: rgba(0,0,0,.78); color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 22px; line-height: 1.5; z-index: 6; display: none; text-align: center; pointer-events: none; }
+.fbr-cap.show { display: block; }
+/* 放大鏡 */
+.fbr-lens { position: absolute; z-index: 8; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 6px 24px rgba(0,0,0,.55), inset 0 0 20px rgba(0,0,0,.2); pointer-events: none; display: none; background: #fff; }
+.fbr-lens.show { display: block; }
+.fbr-lens.rect { border-radius: 12px; }
+/* 眼控模式 */
+.fbr-zone { position: absolute; top: 46px; bottom: 34px; width: 11%; z-index: 4; display: none; align-items: center; justify-content: center; background: rgba(255,255,255,.06); color: rgba(255,255,255,.85); font-size: 64px; border: 2px dashed rgba(255,255,255,.2); }
+.fbr-zone.l { left: 0; } .fbr-zone.r { right: 0; }
+.fbr.gaze .fbr-zone { display: flex; }
+.fbr.gaze .fbr-arrow { display: none; }
+.fbr.gaze .fbr-zone.dw { background: rgba(255, 204, 51, .22); }
+.fbr-zone small { position: absolute; bottom: 14px; font-size: 16px; }
+.fbr.gaze .fbr-top { height: 64px; }
+.fbr.gaze .fbr-stage { top: 68px; bottom: 54px; }
+.fbr.gaze .fbr-zone { top: 68px; bottom: 54px; }
+.fbr.gaze .fbr-b { width: 56px; height: 54px; font-size: 26px; }
+.fbr.gaze .fbr-b svg { width: 30px; height: 30px; }
+.fbr.gaze .fbr-bot { height: 52px; }
+.fbr.gaze .fbr-bot .fbr-t { height: 46px; font-size: 17px; padding: 0 16px; }
+.fbr.gaze .fbr-side { top: 64px; bottom: 52px; width: 360px; }
+.fbr.gaze .fbr-toc a { padding: 14px 10px; font-size: 18px; }
+.fbr.gaze .fbr-pg { height: 38px; font-size: 18px; width: 110px; }
+.fbr-ring { position: absolute; width: 64px; height: 64px; margin: -32px 0 0 -32px; z-index: 20; pointer-events: none; display: none; }
+.fbr-ring.show { display: block; }
+.fbr-ring circle { fill: none; stroke-width: 7; }
+.fbr-ring .bg { stroke: rgba(0,0,0,.35); }
+.fbr-ring .fg { stroke: #ffcc33; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+.fbr [data-dwell].dwelling { outline: 3px solid #ffcc33; outline-offset: -3px; }
+/* 密碼 */
+.fbr-lock { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.6); }
+.fbr-lock .box { background: #fff; color: #222; padding: 26px; border-radius: 12px; width: 320px; text-align: center; }
+.fbr-lock input { width: 100%; padding: 10px; font-size: 16px; margin: 12px 0; border: 1px solid #bbb; border-radius: 6px; }
+@media (max-width: 640px) {
+  .fbr-top { overflow-x: auto; justify-content: flex-start; }
+  .fbr-b { flex: none; }
+  .fbr-logo { display: none; }
+  .fbr-side { width: 86%; }
+  .fbr-arrow { width: 30px; }
+}
+@media print { .fbr { display: none; } }
