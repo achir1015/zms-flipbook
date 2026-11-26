@@ -53,6 +53,14 @@ final class Web: NSObject, WKScriptMessageHandlerWithReply, WKNavigationDelegate
             })();
             """, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         cfg.userContentController.addUserScript(shim)
+        // 測試用：xcrun simctl launch … -autotest → 自動建立示範電子書並翻兩頁（給模擬器截圖驗證）
+        if ProcessInfo.processInfo.arguments.contains("-autotest") {
+            cfg.userContentController.addUserScript(WKUserScript(source: """
+                setTimeout(async function () { try { var d = document.querySelector('.dlg-foot .btn'); if (d) d.click();
+                  await FB.makeSample(); await new Promise(r => setTimeout(r, 1500)); FB.reader.fl.next(); await new Promise(r => setTimeout(r, 1300)); FB.reader.fl.next();
+                } catch (e) { console.error(e); } }, 2500);
+                """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        }
         view = WKWebView(frame: .zero, configuration: cfg)
         super.init()
         cfg.userContentController.addScriptMessageHandler(self, contentWorld: .page, name: "zms")
