@@ -280,7 +280,8 @@ def api_open_published(h, q, body):
     f = os.path.join(p, "index.html") if os.path.isdir(p) else p
     if os.path.isfile(f) and f.lower().endswith(".html"):
         import webbrowser
-        webbrowser.open("file:///" + f.replace("\\", "/"))
+        import pathlib
+        webbrowser.open(pathlib.Path(f).resolve().as_uri())
     elif STATE.get("native"):
         STATE["native"].reveal(p)
     return {}

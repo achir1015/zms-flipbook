@@ -8,6 +8,7 @@ import os
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 
 from .core import Base, BizError
@@ -186,6 +187,11 @@ class Library(Base):
                     _office_com(src, out, ext)
                 except Exception as e:      # 沒裝 Office 或 Office 出錯 → 改用 LibreOffice
                     err = str(e)
+            elif sys.platform == "darwin":
+                try:
+                    _office_mac(src, out, ext)
+                except Exception as e:
+                    err = str(e)
             if not os.path.isfile(out):
                 lo = _find_soffice()
                 if lo:
@@ -195,8 +201,15 @@ class Library(Base):
                                    capture_output=True, timeout=300, creationflags=NO_WINDOW)
                     if os.path.isfile(os.path.join(out_dir, "in.pdf")):
                         os.replace(os.path.join(out_dir, "in.pdf"), out)
+            if not os.path.isfile(out) and sys.platform == "darwin" and ext in (".doc", ".docx", ".rtf", ".odt", ".txt"):
+                # Mac 沒有可用的 Office：macOS 內建 textutil 轉成網頁，再用 Chrome／Edge 印成 PDF
+                html = os.path.join(out_dir, "doc.html")
+                subprocess.run(["textutil", "-convert", "html", "-output", html, src], capture_output=True, timeout=120)
+                exe = _find_browser()
+                if os.path.isfile(html) and exe:
+                    _browser_pdf(exe, "file://" + html, out, out_dir)
             if not os.path.isfile(out):
-                raise BizError("無法轉換「%s」：這台電腦需要安裝 Microsoft Office（PowerPoint／Word）或免費的 LibreOffice。%s"
+                raise BizError("無法轉換「%s」：這台電腦需要可以使用的 Microsoft Office（PowerPoint／Word），或安裝免費的 LibreOffice；也可以先在 Office 裡「另存成 PDF」再匯入 PDF。%s"
                                % (name, ("（" + err[:200] + "）") if err else ""))
             return self.import_file(out, name=os.path.splitext(name)[0] + ".pdf", kind="pdf")
         finally:
@@ -214,10 +227,7 @@ class Library(Base):
         d = tempfile.mkdtemp(prefix="zmsflip-web-")
         out = os.path.join(d, "page.pdf")
         try:
-            subprocess.run([exe, "--headless=new", "--disable-gpu", "--no-first-run", "--no-pdf-header-footer",
-                            "--user-data-dir=" + os.path.join(d, "prof"), "--virtual-time-budget=8000",
-                            "--window-size=%d,1600" % width, "--print-to-pdf=" + out, url],
-                           capture_output=True, timeout=120, creationflags=NO_WINDOW)
+            _browser_pdf(exe, url, out, d, width)
             if not os.path.isfile(out) or os.path.getsize(out) < 500:
                 raise BizError("網頁擷取失敗，請確認網址正確、電腦有連上網路")
             host = url.split("//", 1)[1].split("/", 1)[0]
@@ -403,6 +413,49 @@ def _office_com(src, out, ext):
                 app.Quit()
     finally:
         pythoncom.CoUninitialize()
+
+
+def _browser_pdf(exe, url, out, work, width=1280):
+    subprocess.run([exe, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+                    "--no-pdf-header-footer", "--user-data-dir=" + os.path.join(work, "prof"), "--virtual-time-budget=8000",
+                    "--window-size=%d,1600" % width, "--print-to-pdf=" + out, url],
+                   capture_output=True, timeout=120, creationflags=NO_WINDOW)
+
+
+def _office_mac(src, out, ext):
+    """Mac 版 Office（沙盒）：檔案先放進 Office 自己的資料夾，再用 AppleScript 另存 PDF。"""
+    if ext in (".ppt", ".pptx", ".pps", ".ppsx", ".odp"):
+        app, bid = "Microsoft PowerPoint", "com.microsoft.Powerpoint"
+    elif ext in (".xls", ".xlsx", ".ods"):
+        app, bid = "Microsoft Excel", "com.microsoft.Excel"
+    else:
+        app, bid = "Microsoft Word", "com.microsoft.Word"
+    if not os.path.isdir("/Applications/%s.app" % app):
+        raise RuntimeError("沒有安裝 " + app)
+    box = os.path.expanduser("~/Library/Containers/%s/Data/zmsflip" % bid)
+    os.makedirs(box, exist_ok=True)
+    inp, pdf = os.path.join(box, "in" + ext), os.path.join(box, "out.pdf")
+    shutil.copyfile(src, inp)
+    if os.path.exists(pdf):
+        os.remove(pdf)
+    if bid.endswith("Powerpoint"):
+        body = ('open (POSIX file "%s")\ndelay 1\nset p to active presentation\n'
+                'save p in (POSIX file "%s") as save as PDF\nclose p saving no' % (inp, pdf))
+    elif bid.endswith("Excel"):
+        body = ('open (POSIX file "%s")\nset w to active workbook\n'
+                'save as w filename ((POSIX file "%s") as string) file format PDF file format\nclose w saving no' % (inp, pdf))
+    else:
+        body = ('open (POSIX file "%s")\nset d to active document\n'
+                'save as d file name ((POSIX file "%s") as string) file format format PDF\nclose d saving no' % (inp, pdf))
+    try:
+        r = subprocess.run(["osascript", "-e", 'tell application "%s"\n%s\nend tell' % (app, body)],
+                           capture_output=True, text=True, timeout=300)
+        if os.path.isfile(pdf) and os.path.getsize(pdf) > 500:
+            shutil.move(pdf, out)
+            return
+        raise RuntimeError((r.stderr or "").strip()[-200:] or "Office 沒有產生 PDF")
+    finally:
+        shutil.rmtree(box, ignore_errors=True)
 
 
 def _find_soffice():
