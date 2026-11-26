@@ -92,7 +92,7 @@
   // ------------------------------------------------------------ 「API」
   const pref = async () => (await getOne('kv', 'pref')) || {};
   const R = {
-    state: async () => ({ ready: true, error: '', app: '資料助秘電子書翻頁（線上版）', version: VERSION, credit: '開發：吳玉柱 先生 與 Claude AI Opus 5.5', native: false,
+    state: async () => ({ ready: true, error: '', app: window.ZMSIOS ? '資料助秘電子書翻頁' : '資料助秘電子書翻頁（線上版）', version: window.ZMSIOS ? window.ZMSIOS.version : VERSION, credit: '開發：吳玉柱 先生 與 Claude AI Opus 5.5', native: false,
       has_users: true, user: USER, funcs: [], roles: {} }),
     last_user: async () => ({ uid: 'local' }),
     logout: async () => ({}),
@@ -135,7 +135,21 @@
     office_pdf: async () => { throw bizErr('線上版不能轉換 PowerPoint／Word：請先在 Office 裡「另存成 PDF」，再匯入 PDF；或使用電腦版。'); },
     web_pdf: async () => { throw bizErr('線上版不能擷取網頁（瀏覽器安全限制），請使用電腦版。'); },
     import_paths: async () => { throw bizErr('線上版請直接選擇檔案'); },
-    update_check: async () => ({ latest: true, info: null, current: VERSION, note: '線上版每次打開都是最新版。' }),
+    update_check: async () => {
+      const app = window.ZMSIOS || window.ZMSAndroid;
+      if (!app) return { latest: true, info: null, current: VERSION, note: '線上版每次打開都是最新版。' };
+      const cur = window.ZMSIOS ? window.ZMSIOS.version : (window.ZMSAndroid.getVersion ? window.ZMSAndroid.getVersion() : VERSION);
+      const r = await fetch('https://api.github.com/repos/achir1015/zms-flipbook/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
+      if (!r.ok) throw bizErr('無法連到更新伺服器（' + r.status + '）');
+      const rel = await r.json();
+      const want = window.ZMSIOS ? /-ios\.ipa$/ : /-android\.apk$/;
+      const asset = (rel.assets || []).find((x) => want.test(x.name));
+      const ver = (rel.tag_name || '').replace(/^v/i, '');
+      const num = (v) => v.split('.').map((x) => +x || 0).reduce((t, x) => t * 1000 + x, 0);
+      if (!asset || num(ver) <= num(cur)) return { latest: true, info: null, current: cur };
+      const page = window.ZMSIOS ? 'https://achir1015.github.io/zms-flipbook/ios/' : asset.browser_download_url;
+      return { latest: false, current: cur, info: { version: ver, notes: rel.body || '', page, size: asset.size, name: '' } };
+    },
     publish: async (b) => {
       const id = 'p' + Date.now();
       JOBS[id] = { id, progress: 0, msg: '準備中…', done: false, error: '', path: '' };
@@ -211,6 +225,10 @@
     Object.assign(job, { done: true, progress: 1, msg: '完成', path: fname, size: out.size });
   }
   FB.download = function (blob, name) {
+    if (window.ZMSIOS) {         // iPhone／iPad App：傳給 App 內的伺服器 → 分享選單（存到檔案、LINE、Email…）
+      fetch('/__save?name=' + encodeURIComponent(name), { method: 'POST', body: blob }).catch((e) => FB.toast('存檔失敗：' + e.message, 'err'));
+      return;
+    }
     const u = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = u; a.download = name; document.body.append(a); a.click(); a.remove();

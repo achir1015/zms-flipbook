@@ -24,7 +24,7 @@
     try { c = await FB.get('company'); } catch (e) { /* */ }
     const folder = h('input', { class: 'inp', value: o.folder || c.out_dir || c.default_out || '' });
     folder.addEventListener('change', () => (o.folder = folder.value));
-    if (FB.LOCAL) box.append(h('label', { class: 'fld' }, '檔名', name), h('p', { class: 'hint' }, '線上版發佈後會直接下載到這台裝置的「下載」資料夾。ZIP 解開後上傳到網站，打開 index.html 就是電子書。'));
+    if (FB.LOCAL) box.append(h('label', { class: 'fld' }, '檔名', name), h('p', { class: 'hint' }, window.ZMSIOS ? '發佈完成後會出現分享選單，可以存到「檔案」、用 LINE／Email 傳出去。單一 HTML 檔收到的人點開就能看。' : '線上版發佈後會直接下載到這台裝置的「下載」資料夾。ZIP 解開後上傳到網站，打開 index.html 就是電子書。'));
     else box.append(h('div', { class: 'row' }, h('label', { class: 'fld' }, '名稱', name),
       h('label', { class: 'fld' }, '存放位置', h('div', { class: 'row' }, folder, FB.native ? h('button', { class: 'btn', style: { flex: 'none' }, onclick: async () => { const f = await FB.native.pick_folder(folder.value); if (f) { folder.value = f; o.folder = f; } } }, '選擇…') : null))));
     // 預先錄好朗讀語音
