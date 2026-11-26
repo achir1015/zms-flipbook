@@ -25,7 +25,8 @@
       ['word', '📝', 'Word 文件', 'DOC、DOCX、RTF、TXT'],
       ['web', '🌐', '線上網頁', '輸入網址，整頁擷取'],
     ];
-    if (!FB.native && !FB.LOCAL) src.splice(2, 1);
+    if (FB.LOCAL) src.splice(3, 3);                         // 線上版：PowerPoint、Word、網頁要用電腦版
+    else if (!FB.native) src.splice(2, 1);
     const name = h('input', { class: 'inp', value: '', placeholder: '空白＝用第一個檔案的名稱' });
     const q = FB.selectEl(['std', '標準（建議）'], ['high', '高畫質（放大看更清楚，檔案較大）'], ['small', '省空間（手機閱讀）'], S.pref.importQ || 'std', (v) => FB.savePref({ importQ: v }));
     const mode = FB.selectEl(['merge', '合併成一本電子書'], ['each', '每個檔案各做成一本（批次轉換）'], 'merge', () => 0);
@@ -34,6 +35,7 @@
     FB.dialog({ title: '＋ 建立電子書：選擇來源', width: '640px', body: h('div', {}, box,
       h('div', { class: 'row', style: { marginTop: '12px' } }, h('label', { class: 'fld' }, '書名', name), h('label', { class: 'fld' }, '頁面畫質', q)),
       h('label', { class: 'fld' }, '選了好幾個檔案時', mode),
+      FB.LOCAL ? h('p', { class: 'hint', style: { color: '#f0a531' } }, '線上版：PowerPoint、Word 請先在 Office「另存成 PDF」再匯入；擷取網頁請用電腦版。所有資料只存在這台裝置的瀏覽器裡。') : null,
       h('p', { class: 'hint' }, '小技巧：也可以直接把檔案從檔案總管拖進書櫃。PDF 裡的文字會一起讀進來，可以搜尋、用自然人聲朗讀；PDF 的目錄與超連結也會自動帶入。')),
     buttons: [], onOpen: (b, c) => (close = c) });
   };
@@ -48,6 +50,10 @@
         if (!url) return;
         const b = FB.busy('擷取網頁中（約 10～30 秒）…');
         try { const a = await FB.api('web_pdf', { url }); files = [{ name: a.name, asset: a }]; } finally { b.close(); }
+      } else if (kind === 'folder' && !FB.native) {
+        files = await pickFolderWeb();
+        if (!files.length) return;
+        if (!o.name) o.name = files.dir;
       } else if (kind === 'folder') {
         const d = await FB.native.pick_folder('');
         if (!d) return;
@@ -77,6 +83,21 @@
       const inp = FB.$('#file-input');
       inp.accept = accept; inp.value = '';
       inp.onchange = async () => { const fs = Array.from(inp.files || []); res(await uploadFiles(fs)); };
+      inp.click();
+    });
+  }
+  // 網頁版選資料夾：<input webkitdirectory>，只取圖片、依檔名自然排序
+  function pickFolderWeb() {
+    return new Promise((res) => {
+      const inp = FB.h('input', { type: 'file', webkitdirectory: true, multiple: true });
+      inp.onchange = async () => {
+        const fs = Array.from(inp.files || []).filter((f) => /\.(jpe?g|png|gif|bmp|webp)$/i.test(f.name))
+          .sort((a, b) => (a.webkitRelativePath || a.name).localeCompare(b.webkitRelativePath || b.name, 'zh-Hant', { numeric: true }));
+        if (!fs.length) { FB.toast('這個資料夾裡沒有圖片', 'err'); return res([]); }
+        const out = await uploadFiles(fs);
+        out.dir = ((fs[0].webkitRelativePath || '').split('/')[0]) || '';
+        res(out);
+      };
       inp.click();
     });
   }

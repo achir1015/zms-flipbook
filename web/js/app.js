@@ -17,7 +17,7 @@
       } catch (e) { $('#splash-msg').textContent = e.message; }
       await new Promise((r) => setTimeout(r, 500));
     }
-    if (S.state.user) { S.user = S.state.user; await loadPref(); return FB.gotoHome(); }
+    if (S.state.user) { S.user = S.state.user; await loadPref(); return FB.gotoHome(!!FB.LOCAL); }
     FB.showLogin();
   };
   async function loadPref() { try { S.pref = await FB.get('pref'); } catch (e) { S.pref = {}; } }
@@ -43,7 +43,18 @@
     if (prefetchOnly) return null;
     return URL.createObjectURL(await r.blob());
   };
-  FB.readerOpts = (extra) => Object.assign({ url: (id) => FB.mediaURL(id), tts: FB.tts, pref: S.pref, savePref: FB.savePref,
+  // 試聽一句（屬性面板、發佈頁的 ▶）：電腦版用自然人聲；線上版用裝置語音
+  FB.sayTest = async (text, voice) => {
+    if (!FB.LOCAL) { const u = await FB.tts(text, voice, 1); if (u) new Audio(u).play(); return; }
+    if (!window.speechSynthesis) return FB.toast('這個瀏覽器沒有語音功能', 'err');
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW';
+    const vs = speechSynthesis.getVoices().filter((x) => /^zh/i.test(x.lang));
+    const v = vs.find((x) => /Natural|Online/i.test(x.name) && /TW/i.test(x.lang)) || vs.find((x) => /TW/i.test(x.lang)) || vs[0];
+    if (v) u.voice = v;
+    if (/child/.test(voice)) u.pitch = 1.5; else if (/elder/.test(voice)) u.pitch = 0.75;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  };
+  FB.readerOpts = (extra) => Object.assign({ url: (id) => FB.mediaURL(id), tts: FB.LOCAL ? null : FB.tts, pref: S.pref, savePref: FB.savePref,
     fullscreen: FB.native ? () => FB.native.toggle_fullscreen() : null }, extra || {});
 
   // ================================================================ 登入

@@ -20,7 +20,7 @@
 |---|---|
 | Windows 11 | ✅ 第一版 |
 | macOS（MacBook Pro） | ✅ 第一版（已公證） |
-| 線上版（HTML） | 規劃中 |
+| 線上版（HTML） | ✅ https://achir1015.github.io/zms-flipbook/ （PDF、圖片、相簿資料夾；資料只存在自己的瀏覽器） |
 | iPhone／iPad（線上安裝） | 規劃中 |
 | Android | 規劃中 |
 

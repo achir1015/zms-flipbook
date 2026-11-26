@@ -205,7 +205,7 @@
     box.append(fld('朗讀內容（自然人聲會唸這段）', speak));
     if (p.text) box.append(h('details', {}, h('summary', { class: 'hint' }, '頁面上讀到的文字（' + p.text.length + ' 字）'), h('pre', { class: 'pg-text' }, p.text.slice(0, 3000))));
     box.append(h('div', { class: 'row' },
-      h('button', { class: 'btn sm', onclick: async () => { const v = FB.S.pref.voice || 'f-adult'; const t = (p.speak || p.text || '').trim(); if (!t) return FB.toast('這一頁沒有可以唸的文字'); const s = FB.sentences(t)[0]; const u = await FB.tts(s, v, 1); if (u) new Audio(u).play(); } }, '▶ 試聽第一句'),
+      h('button', { class: 'btn sm', onclick: async () => { const v = FB.S.pref.voice || 'f-adult'; const t = (p.speak || p.text || '').trim(); if (!t) return FB.toast('這一頁沒有可以唸的文字'); FB.sayTest(FB.sentences(t)[0], v); } }, '▶ 試聽第一句'),
       h('button', { class: 'btn sm', onclick: () => FB.preview(S.page) }, '📖 從這頁預覽')));
     box.append(h('h4', {}, '這一頁的旁白錄音'));
     box.append(h('p', { class: 'hint' }, '有錄好的旁白（MP3 等），朗讀時就播放旁白，不用合成語音。'));

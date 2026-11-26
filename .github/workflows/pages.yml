@@ -1,0 +1,31 @@
+# 線上版（GitHub Pages）：tools/make_pages.py 產生 docs/ → 部署
+name: pages
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["web/**", "fb/__init__.py", "tools/make_pages.py", "docs/ios/**", ".github/workflows/pages.yml"]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python tools/make_pages.py
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: docs }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: "${{ steps.d.outputs.page_url }}" }
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
