@@ -1,4 +1,6 @@
 # 資料助秘電子書翻頁
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/3342c5ff-50da-474f-8529-d26cd9eb5c57" />
+示範
 
 把 **PDF、圖片（相簿）、整個相簿資料夾、PowerPoint 簡報、Word／Excel 文件、線上網頁** 變成可以「一角掀起來」翻頁的電子書。
 
