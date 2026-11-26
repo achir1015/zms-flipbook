@@ -453,6 +453,10 @@ def _office_mac(src, out, ext):
         if os.path.isfile(pdf) and os.path.getsize(pdf) > 500:
             shutil.move(pdf, out)
             return
+        # 失敗（例如 Office 沒有啟用、只能檢視）：把剛剛打開的檔案關掉，不留在使用者畫面上
+        what = {"com.microsoft.Powerpoint": "presentations", "com.microsoft.Excel": "workbooks"}.get(bid, "documents")
+        subprocess.run(["osascript", "-e", 'tell application "%s" to close every %s saving no' % (app, what[:-1] if what != "documents" else "document")],
+                       capture_output=True, timeout=30)
         raise RuntimeError((r.stderr or "").strip()[-200:] or "Office 沒有產生 PDF")
     finally:
         shutil.rmtree(box, ignore_errors=True)
