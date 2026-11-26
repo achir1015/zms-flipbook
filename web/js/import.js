@@ -25,7 +25,7 @@
       ['word', '📝', 'Word 文件', 'DOC、DOCX、RTF、TXT'],
       ['web', '🌐', '線上網頁', '輸入網址，整頁擷取'],
     ];
-    const IOS = window.ZMSIOS || /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+    const IOS = window.ZMSIOS || window.ZMSAndroid || /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
     if (FB.LOCAL) { src.splice(3, 3); if (IOS) src.splice(2, 1); }   // 線上版：PowerPoint、Word、網頁要用電腦版；iPhone／iPad 不能選資料夾
     else if (!FB.native) src.splice(2, 1);
     const name = h('input', { class: 'inp', value: '', placeholder: '空白＝用第一個檔案的名稱' });

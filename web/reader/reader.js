@@ -119,6 +119,8 @@
     return out;
   }
   FB.sentences = sentences;
+  FB._ttsWait = {};
+  window.__zmsTtsDone = (id) => { const f = FB._ttsWait[id]; if (f) f(); };
 
   // ================================================================ 閱讀器
   class Reader {
@@ -644,6 +646,7 @@
       this.reading = null;
       if (this.readAudio) { this.readAudio.pause(); this.readAudio.onended && this.readAudio.onended(); this.readAudio = null; }
       if (window.speechSynthesis) speechSynthesis.cancel();
+      if (window.ZMSAndroid && window.ZMSAndroid.ttsStop) try { window.ZMSAndroid.ttsStop(); } catch (e) { /* */ }
       if (this._wake) this._wake();
       if (!keep) {
         this.showReading(-1);
@@ -662,6 +665,19 @@
       });
     }
     speakLocal(me, text) {
+      // Android App：WebView 沒有網頁語音 → 用手機的文字轉語音
+      const A = window.ZMSAndroid;
+      if (A && A.ttsSpeak && A.ttsAvailable && A.ttsAvailable()) {
+        return new Promise((res) => {
+          const id = 't' + Date.now() + Math.random().toString(36).slice(2, 6);
+          let done = false;
+          const fin = () => { if (!done) { done = true; this._wake = null; delete FB._ttsWait[id]; res(); } };
+          FB._ttsWait[id] = fin;
+          this._wake = () => { try { A.ttsStop(); } catch (e) { /* */ } fin(); };
+          const v = this.pref.voice || '';
+          A.ttsSpeak(text, this.pref.speed || 1, /child/.test(v) ? 1.4 : /elder/.test(v) ? 0.8 : /^m-/.test(v) ? 0.9 : 1.05, id);
+        });
+      }
       return new Promise((res) => {
         if (!window.speechSynthesis) return setTimeout(res, 600);
         const u = new SpeechSynthesisUtterance(text);

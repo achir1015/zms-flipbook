@@ -46,6 +46,8 @@
   // 試聽一句（屬性面板、發佈頁的 ▶）：電腦版用自然人聲；線上版用裝置語音
   FB.sayTest = async (text, voice) => {
     if (!FB.LOCAL) { const u = await FB.tts(text, voice, 1); if (u) new Audio(u).play(); return; }
+    const A = window.ZMSAndroid;
+    if (A && A.ttsSpeak) { if (!A.ttsAvailable()) return FB.toast('手機沒有中文語音，請到「設定 → 文字轉語音」下載中文語音', 'err'); A.ttsSpeak(text, 1, /child/.test(voice) ? 1.4 : /elder/.test(voice) ? 0.8 : 1, 'test'); return; }
     if (!window.speechSynthesis) return FB.toast('這個瀏覽器沒有語音功能', 'err');
     const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW';
     const vs = speechSynthesis.getVoices().filter((x) => /^zh/i.test(x.lang));

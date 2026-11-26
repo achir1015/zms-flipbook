@@ -169,6 +169,20 @@
     if (!f) throw new Error('線上版沒有這個功能：' + name);
     return f(body || {}, q || {});
   }
+  // Android 返回鍵：先關對話框、閱讀器面板，再從閱讀／編輯畫面回書櫃（回傳 true＝已處理）
+  window.__zmsBack = function () {
+    const dlg = document.querySelector('.dlg-wrap');
+    if (dlg) { const x = dlg.querySelector('.dlg .x'); if (x) x.click(); else dlg.remove(); return true; }
+    const pop = document.querySelector('.fbr-pop, .fbr-lock');
+    if (pop) { pop.remove(); return true; }
+    const pnl = document.querySelector('.fbr-panel.show');
+    if (pnl) { pnl.classList.remove('show'); return true; }
+    const pv = document.querySelector('.pv-full .pv-close');
+    if (pv) { pv.click(); return true; }
+    if (!document.getElementById('home').classList.contains('show')) { if (FB.Guide) FB.Guide.stop(); FB.gotoHome(); return true; }
+    return false;
+  };
+  if (window.ZMSAndroid && window.ZMSAndroid.openUrl) window.open = (u) => { if (u) window.ZMSAndroid.openUrl(String(u)); else FB.toast('Android 版不支援這個功能（列印請用電腦版）'); return null; };
   FB.api = (name, body) => call(name, body);
   FB.get = (name, params) => call(name, {}, params || {});
   FB.raw = async (name, bytes, params) => {
@@ -225,6 +239,24 @@
     Object.assign(job, { done: true, progress: 1, msg: '完成', path: fname, size: out.size });
   }
   FB.download = function (blob, name) {
+    if (window.ZMSAndroid && window.ZMSAndroid.saveBegin) {     // Android App：分段傳給 App 存到「下載/電子書翻頁」，再開分享選單
+      (async () => {
+        const b = JSON.parse(window.ZMSAndroid.saveBegin(name, blob.type || 'application/octet-stream'));
+        if (b.status !== 'ok') throw new Error(b.message);
+        const CH = 3 * 256 * 1024;
+        for (let off = 0; off < blob.size; off += CH) {
+          const u8 = new Uint8Array(await blob.slice(off, off + CH).arrayBuffer());
+          let bin = '';
+          for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+          const r = JSON.parse(window.ZMSAndroid.saveChunk(b.id, btoa(bin)));
+          if (r.status !== 'ok') throw new Error(r.message);
+        }
+        const e = JSON.parse(window.ZMSAndroid.saveEnd(b.id));
+        if (e.status !== 'ok') throw new Error(e.message);
+        FB.toast('已存到手機的「' + e.path + '」', 'ok');
+      })().catch((e) => FB.toast('存檔失敗：' + e.message, 'err'));
+      return;
+    }
     if (window.ZMSIOS) {         // iPhone／iPad App：傳給 App 內的伺服器 → 分享選單（存到檔案、LINE、Email…）
       fetch('/__save?name=' + encodeURIComponent(name), { method: 'POST', body: blob }).catch((e) => FB.toast('存檔失敗：' + e.message, 'err'));
       return;
