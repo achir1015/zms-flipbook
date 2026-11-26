@@ -19,7 +19,7 @@
 | 平台 | 狀態 |
 |---|---|
 | Windows 11 | ✅ 第一版 |
-| macOS（MacBook Pro） | 規劃中 |
+| macOS（MacBook Pro） | ✅ 第一版（已公證） |
 | 線上版（HTML） | 規劃中 |
 | iPhone／iPad（線上安裝） | 規劃中 |
 | Android | 規劃中 |
