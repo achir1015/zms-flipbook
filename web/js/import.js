@@ -125,6 +125,42 @@
     if (id && !(o && o.append)) FB.openReader(id);
   };
 
+  // ------------------------------------------------------------ 收件匣：資料助秘文件office彙整「匯出到電子書翻頁」
+  // 文件office彙整把 PDF 放進收件匣並開啟本程式；這裡每 3 秒看一次，問使用者要不要建立電子書。
+  const asked = new Set();
+  let inboxBusy = false;
+  I.watchInbox = function () {
+    if (I._inboxTimer || FB.LOCAL || !FB.native) return;
+    const tick = async () => {
+      if (inboxBusy || !FB.S.user || document.querySelector('.dlg-wrap, .busy')) return;
+      let items;
+      try { items = await FB.get('inbox'); } catch (e) { return; }
+      const it = items.find((x) => !asked.has(x.path));
+      if (!it) return;
+      asked.add(it.path);
+      inboxBusy = true;
+      try { await I.fromInbox(it); } finally { inboxBusy = false; }
+    };
+    I._inboxTimer = setInterval(tick, 3000);
+    setTimeout(tick, 800);
+  };
+  I.fromInbox = async function (it) {
+    const from = it.source === 'ZMSOffice' ? '資料助秘文件office彙整' : '其他程式';
+    const ok = await FB.dialog({ title: '📥 收到新文件', width: '480px', body: h('div', {},
+      h('p', {}, '收到來自「' + from + '」的《' + it.title + '》。'), h('p', { class: 'hint' }, '要把它做成翻頁電子書嗎？（建立後可以再換範本、加朗讀、發佈）')),
+    buttons: [{ label: '不要', value: 'no' }, { label: '稍後', value: null }, { label: '建立電子書', primary: true, value: 'yes' }] });
+    if (ok === null) return;                 // 稍後：這次開程式不再問，下次開程式會再問
+    if (ok === 'yes') {
+      let files;
+      try { files = await importPaths([it.path], 'pdf'); } catch (e) { return FB.err(e); }
+      if (!files.length) return;
+      const id = await I.build(files, { name: it.title, q: (S.pref && S.pref.importQ) || 'std' });
+      if (!id) return;
+      await FB.api('inbox_done', { path: it.path }).catch(() => {});
+      FB.openReader(id);
+    } else await FB.api('inbox_done', { path: it.path }).catch(FB.err);
+  };
+
   // ------------------------------------------------------------ 轉換
   // 回傳電子書 id；o.append＝加到目前編輯中的書（o.at 插入位置）
   I.build = async function (files, o) {

@@ -97,8 +97,29 @@ def run_web(port):
         server.stop_database()
 
 
+def _queue_import():
+    """ZMSFlipbook.exe --import <檔案>：不在收件匣的檔案先複製進去（程式開著時由畫面每 3 秒接手）。"""
+    if "--import" not in sys.argv:
+        return
+    i = sys.argv.index("--import")
+    p = sys.argv[i + 1] if len(sys.argv) > i + 1 else ""
+    if not p.lower().endswith(".pdf") or not os.path.isfile(p):
+        return
+    from fb.server import inbox_dirs
+    dirs = inbox_dirs()
+    if any(os.path.normcase(os.path.dirname(os.path.abspath(p))) == os.path.normcase(os.path.abspath(d)) for d in dirs):
+        return
+    import shutil
+    os.makedirs(dirs[0], exist_ok=True)
+    shutil.copy(p, os.path.join(dirs[0], os.path.basename(p)))
+
+
 def run_desktop():
     from fb import APP_NAME, single
+    try:
+        _queue_import()
+    except Exception:
+        pass
     if not single.acquire():
         single.activate_existing()
         sys.exit(0)

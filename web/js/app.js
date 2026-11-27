@@ -166,6 +166,7 @@
         acts));
     }
     if (fromLogin) FB.Guide.autoStart();
+    FB.Import.watchInbox();
   };
   async function rename(b) {
     const n = await FB.prompt('電子書改名', b.name, '新書名');

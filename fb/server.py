@@ -341,10 +341,74 @@ def api_shortcut(h, q, body):
     return {}
 
 
+# ---------------------------------------------------------------- 收件匣（資料助秘文件office彙整「匯出到電子書翻頁」）
+def inbox_dirs():
+    """文件office彙整把 PDF＋同名 .json 放到 <翻頁資料夾>/inbox。開發時資料夾在專案 data/，也一併看標準位置。"""
+    from .settings import data_dir
+    out = [os.path.join(data_dir(), "inbox")]
+    if os.name == "nt":
+        out.append(os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "ZMSFlipbook", "inbox"))
+    else:
+        out.append(os.path.expanduser("~/Library/Application Support/ZMSFlipbook/inbox"))
+    seen, res = set(), []
+    for d in out:
+        k = os.path.normcase(os.path.abspath(d))
+        if k not in seen:
+            seen.add(k)
+            res.append(d)
+    return res
+
+
+def api_inbox(h, q, body):
+    """列出收件匣裡等待建立電子書的 PDF（舊的在前）。"""
+    _sess(h, q)
+    items = []
+    for d in inbox_dirs():
+        if not os.path.isdir(d):
+            continue
+        for n in os.listdir(d):
+            p = os.path.join(d, n)
+            if not n.lower().endswith(".pdf") or not os.path.isfile(p):
+                continue
+            meta = {}
+            try:
+                with open(p[:-4] + ".json", encoding="utf-8") as f:
+                    meta = json.load(f)
+            except (OSError, ValueError):
+                pass
+            items.append(dict(path=p, title=meta.get("title") or n[:-4], source=meta.get("source") or "",
+                              created=meta.get("created") or "", mtime=os.path.getmtime(p)))
+    items.sort(key=lambda x: x["mtime"])
+    return items
+
+
+def api_inbox_done(h, q, body):
+    """建立好電子書（或使用者不要）之後，把檔案移到 inbox/done（保留 30 份，舊的刪掉）。"""
+    _sess(h, q)
+    p = os.path.abspath(body.get("path") or "")
+    if not any(os.path.normcase(os.path.dirname(p)) == os.path.normcase(os.path.abspath(d)) for d in inbox_dirs()):
+        raise BizError("不是收件匣裡的檔案")
+    done = os.path.join(os.path.dirname(p), "done")
+    os.makedirs(done, exist_ok=True)
+    for src in (p, p[:-4] + ".json"):
+        if os.path.isfile(src):
+            dst = os.path.join(done, os.path.basename(src))
+            if os.path.exists(dst):
+                os.remove(dst)
+            shutil.move(src, dst)
+    old = sorted((os.path.join(done, n) for n in os.listdir(done)), key=os.path.getmtime)
+    for x in old[:-60]:
+        try:
+            os.remove(x)
+        except OSError:
+            pass
+    return {}
+
+
 ROUTES = {n[4:]: f for n, f in globals().items() if n.startswith("api_") and callable(f)}
 RAW = {"upload"}
 GET_OK = {"state", "assets", "books", "book", "publishes", "users", "audit", "last_user", "pref", "company",
-          "update_check", "voices", "publish_job"}
+          "update_check", "voices", "publish_job", "inbox"}
 
 
 # ==================================================================== HTTP
